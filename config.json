@@ -5,6 +5,7 @@
   "tags": {
     "param": "@param",
     "section": "@section",
+    "subsection": "@subsection",
     "descriptionStart": "@descriptionStart",
     "descriptionEnd": "@descriptionEnd",
     "skip": "@skip",

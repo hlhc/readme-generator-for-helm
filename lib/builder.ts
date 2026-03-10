@@ -1,34 +1,36 @@
 /*
-* Copyright Broadcom, Inc. All Rights Reserved.
-* SPDX-License-Identifier: Apache-2.0
-*/
+ * Copyright Cyrus Ho. All Rights Reserved.
+ * Copyright Broadcom, Inc. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
-import cloneDeep from 'lodash/cloneDeep.js';
+import type Parameter from "./parameter.ts";
+import type { Config } from "./types.ts";
+import { cloneParameters } from "./utils.ts";
 
 /*
  * Sets the proper value for the provided parameter taking into account its modifiers.
  * IMPORTANT: the last modifier takes precedence when it changes the default value
  */
-/* eslint no-param-reassign: ["error", { "props": false }] */
-function applyModifiers(param, config) {
+function applyModifiers(param: Parameter, config: Config): void {
   // Hack for nullable parameters.
   // If there are several modifiers and nullable is the last one,
   // we just want to change the type and not the value.
   // This case is used to change the type on the schema only, maintaining the original value
-  const index = (param.modifiers.findIndex((m) => m === config.modifiers.nullable)) + 1;
-  const isNullableLastModifier = (index === param.modifiers.length);
+  const index = param.modifiers.findIndex((m) => m === config.modifiers.nullable) + 1;
+  const isNullableLastModifier = index === param.modifiers.length;
   param.modifiers.forEach((modifier) => {
     switch (modifier) {
       case `${config.modifiers.array}`:
         param.type = modifier;
         if (!isNullableLastModifier) {
-          param.value = '[]';
+          param.value = "[]";
         }
         break;
       case `${config.modifiers.object}`:
         param.type = modifier;
         if (!isNullableLastModifier) {
-          param.value = '{}';
+          param.value = "{}";
         }
         break;
       case `${config.modifiers.string}`:
@@ -39,12 +41,12 @@ function applyModifiers(param, config) {
         break;
       case `${config.modifiers.nullable}`:
         if (param.value === undefined) {
-          param.value = 'nil';
+          param.value = "nil";
         }
         break;
       case modifier.match(new RegExp(`${config.modifiers.default}:.*`))?.input: {
         const defaultSpacesRegex = `${config.modifiers.default}:\\s*`;
-        param.value = modifier.replace(new RegExp(defaultSpacesRegex), '');
+        param.value = modifier.replace(new RegExp(defaultSpacesRegex), "");
         break;
       }
       default:
@@ -54,16 +56,19 @@ function applyModifiers(param, config) {
 }
 
 /*
-* Returns the array of Parameters after combining the information from the actual YAML with
-* the parsed from the comments:
-* Params:
-*   - valuesObject: object with the real values built from the YAML.
-*   - valuesMetadata: full metadata object parsed from comments
-* Returns: array of Parameters with all the needed information about them
-* IMPORTANT: the array returned will have fields that should not be rendered on the README and
-*            fields that should not be rendered in the schema. They will be selected later.
-*/
-export function combineMetadataAndValues(valuesObject, valuesMetadata) {
+ * Returns the array of Parameters after combining the information from the actual YAML with
+ * the parsed from the comments:
+ * Params:
+ *   - valuesObject: object with the real values built from the YAML.
+ *   - valuesMetadata: full metadata object parsed from comments
+ * Returns: array of Parameters with all the needed information about them
+ * IMPORTANT: the array returned will have fields that should not be rendered on the README and
+ *            fields that should not be rendered in the schema. They will be selected later.
+ */
+export function combineMetadataAndValues(
+  valuesObject: Parameter[],
+  valuesMetadata: Parameter[],
+): void {
   for (const param of valuesMetadata) {
     // The parameters with extra do not appear in the actual object and don't have a value
     if (!param.extra) {
@@ -96,10 +101,10 @@ export function combineMetadataAndValues(valuesObject, valuesMetadata) {
 }
 
 /*
-* Returns the Parameter list that will be rendered in the README
-*/
-export function buildParamsToRenderList(parametersList, config) {
-  let returnList = cloneDeep(parametersList);
+ * Returns the Parameter list that will be rendered in the README
+ */
+export function buildParamsToRenderList(parametersList: Parameter[], config: Config): Parameter[] {
+  let returnList = cloneParameters(parametersList);
   for (const param of returnList) {
     // Modify values following modifiers, except for nullable parameters
     // that must preserve its value
@@ -107,7 +112,7 @@ export function buildParamsToRenderList(parametersList, config) {
       applyModifiers(param, config);
     }
     // The skip parameters must not be rendered in the README
-    returnList = returnList.filter((p) => (!p.skip));
+    returnList = returnList.filter((p) => !p.skip);
   }
 
   return returnList;

@@ -24,6 +24,16 @@ The table that will be inserted into the `readme.md` will have the following str
 
 ### Section 2 title
 
+#### Subsection 2.1 title
+
+| Name      | Description             | Default        |
+|:----------|:------------------------|:---------------|
+| `value_1` | Description for value 1 | `defaultValue` |
+| `value_2` | Description for value 2 | `defaultValue` |
+| `value_3` | Description for value 3 | `defaultValue` |
+
+### Section 3 title
+
 | Name      | Description             | Default        |
 |:----------|:------------------------|:---------------|
 | `value_1` | Description for value 1 | `defaultValue` |
@@ -104,13 +114,14 @@ The following are the tags supported at this very moment:
 
 - For a parameter: `## @param fullKeyPath [modifier?] Description`.
 - For a section: `## @section Section Title"`.
+- For a subsection: `## @subsection Subsection Title`.
 - To skip an object and all its children: `## @skip fullKeyPath Description?`.
 - To add a description for an intermediate object (i.e. not final in the YAML tree): `## @extra fullkeyPath Description`.
 
 All the tags as well as the two initial `#` characters for the comments style can be configured in the [configuration file](#configuration-file).
 
 > [!IMPORTANT]
-> tags' order or position in the file is NOT important except for the @section tag. The @section that will include in the section all the parameters after it until a new section is found or the file ends.
+> tags' order or position in the file is NOT important except for the @section and @subsection tags. A @section includes all parameters after it until a new @section or @subsection is found. A @subsection includes all parameters after it until a new @section or @subsection is found.
 
 The `modifier` is optional and it will change how the parameter is processed.
 Several modifiers can be applied by separating them using commas (`,`). When affecting the value, the last one takes precedence.
@@ -165,6 +176,7 @@ The configuration file has the following structure:
   "tags": {
     "param": "@param",                           <-- Tag that indicates a parameter
     "section": "@section",                       <-- Tag that indicates a section
+    "subsection": "@subsection",                 <-- Tag that indicates a subsection
     "descriptionStart": "@descriptionStart",     <-- Tag that indicates the beginning of a section description
     "descriptionEnd": "@descriptionEnd",         <-- Tag that indicates the end of a section description
     "skip": "@skip",                             <-- Tag that indicates the object must be skipped

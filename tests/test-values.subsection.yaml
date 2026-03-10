@@ -1,0 +1,11 @@
+## @section Parent parameters
+## @param parent.enabled Enable parent feature
+parent:
+  enabled: true
+
+## @subsection Child parameters
+## @descriptionStart Child specific options.
+## @descriptionEnd
+## @param child.replicas Number of child replicas
+child:
+  replicas: 2

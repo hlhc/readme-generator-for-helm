@@ -1,50 +1,64 @@
 /*
-* Copyright Broadcom, Inc. All Rights Reserved.
-* SPDX-License-Identifier: Apache-2.0
-*/
+ * Copyright Cyrus Ho. All Rights Reserved.
+ * Copyright Broadcom, Inc. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
-import * as fs from 'node:fs';
-import dot from 'dot-object';
-import * as YAML from 'yaml';
-import _ from 'lodash';
+import * as fs from "node:fs";
+import * as YAML from "yaml";
 
-import * as utils from './utils.js';
-import Parameter from './parameter.js';
-import Section from './section.js';
-import Metadata from './metadata.js';
+import * as utils from "./utils.ts";
+import Parameter from "./parameter.ts";
+import Section from "./section.ts";
+import Metadata from "./metadata.ts";
+import type { Config } from "./types.ts";
 
 /*
  * Returns a Metadata object
  * The objects within that wrapper object are parsed from the comments metadata
- * See metadata.js
+ * See metadata.ts
  */
-export function parseMetadataComments(valuesFilePath, config) {
-
-
-  const data = fs.readFileSync(valuesFilePath, 'UTF-8');
+export function parseMetadataComments(valuesFilePath: string, config: Config): Metadata {
+  const data = fs.readFileSync(valuesFilePath, "utf-8");
   const lines = data.split(/\r?\n/);
 
   const parsedValues = new Metadata();
-  // eslint-disable-next-line max-len
-  const paramRegex = new RegExp(`^\\s*${config.comments.format}\\s*${config.tags.param}\\s*([^\\s]+)\\s*(\\[.*?\\])?\\s*(.*)$`);
-  const sectionRegex = new RegExp(`^\\s*${config.comments.format}\\s*${config.tags.section}\\s*(.*)$`);
-  const descriptionStartRegex = new RegExp(`^\\s*${config.comments.format}\\s*${config.tags.descriptionStart}\\s*(.*)`);
+  const paramRegex = new RegExp(
+    `^\\s*${config.comments.format}\\s*${config.tags.param}\\s*([^\\s]+)\\s*(\\[.*?\\])?\\s*(.*)$`,
+  );
+  const sectionRegex = new RegExp(
+    `^\\s*${config.comments.format}\\s*${config.tags.section}\\s*(.*)$`,
+  );
+  const subsectionRegex = config.tags.subsection
+    ? new RegExp(`^\\s*${config.comments.format}\\s*${config.tags.subsection}\\s*(.*)$`)
+    : null;
+  const descriptionStartRegex = new RegExp(
+    `^\\s*${config.comments.format}\\s*${config.tags.descriptionStart}\\s*(.*)`,
+  );
   const descriptionContentRegex = new RegExp(`^\\s*${config.comments.format}\\s?(.*)`);
-  const descriptionEndRegex = new RegExp(`^\\s*${config.comments.format}\\s*${config.tags.descriptionEnd}\\s*(.*)`);
-  const skipRegex = new RegExp(`^\\s*${config.comments.format}\\s*${config.tags.skip}\\s*([^\\s]+)\\s*(.*)$`);
-  // eslint-disable-next-line max-len
-  const extraRegex = new RegExp(`^\\s*${config.comments.format}\\s*${config.tags.extra}\\s*([^\\s]+)\\s*(\\[.*?\\])?\\s*(.*)$`);
+  const descriptionEndRegex = new RegExp(
+    `^\\s*${config.comments.format}\\s*${config.tags.descriptionEnd}\\s*(.*)`,
+  );
+  const skipRegex = new RegExp(
+    `^\\s*${config.comments.format}\\s*${config.tags.skip}\\s*([^\\s]+)\\s*(.*)$`,
+  );
+  const extraRegex = new RegExp(
+    `^\\s*${config.comments.format}\\s*${config.tags.extra}\\s*([^\\s]+)\\s*(\\[.*?\\])?\\s*(.*)$`,
+  );
 
   // We assume there will always be a section before any parameter. At least one section is required
-  let currentSection = null;
+  let currentSection: Section | null = null;
   let descriptionParsing = false;
   lines.forEach((line) => {
     // Parse param line
     const paramMatch = line.match(paramRegex);
     if (paramMatch && paramMatch.length > 0) {
       const param = new Parameter(paramMatch[1]);
-      const modifiers = paramMatch[2] ? paramMatch[2].split('[')[1].split(']')[0] : '';
-      param.modifiers = modifiers.split(',').filter((m) => m).map((m) => m.trim());
+      const modifiers = paramMatch[2] ? paramMatch[2].split("[")[1].split("]")[0] : "";
+      param.modifiers = modifiers
+        .split(",")
+        .filter((m) => m)
+        .map((m) => m.trim());
       param.description = paramMatch[3];
       if (currentSection) {
         param.section = currentSection.name;
@@ -61,6 +75,14 @@ export function parseMetadataComments(valuesFilePath, config) {
       currentSection = section;
     }
 
+    // Parse subsection line
+    const subsectionMatch = subsectionRegex ? line.match(subsectionRegex) : null;
+    if (subsectionMatch && subsectionMatch.length > 0) {
+      const subsection = new Section(subsectionMatch[1], 1);
+      parsedValues.addSection(subsection);
+      currentSection = subsection;
+    }
+
     // Parse section description end line
     const descriptionEndMatch = line.match(descriptionEndRegex);
     if (currentSection && descriptionParsing && descriptionEndMatch) {
@@ -69,8 +91,12 @@ export function parseMetadataComments(valuesFilePath, config) {
 
     // Parse section description content line between start and end
     const descriptionContentMatch = line.match(descriptionContentRegex);
-    if (currentSection && descriptionParsing
-        && descriptionContentMatch && descriptionContentMatch.length > 0) {
+    if (
+      currentSection &&
+      descriptionParsing &&
+      descriptionContentMatch &&
+      descriptionContentMatch.length > 0
+    ) {
       currentSection.addDescriptionLine(descriptionContentMatch[1]);
     }
 
@@ -78,7 +104,7 @@ export function parseMetadataComments(valuesFilePath, config) {
     const descriptionStartMatch = line.match(descriptionStartRegex);
     if (currentSection && !descriptionParsing && descriptionStartMatch) {
       descriptionParsing = true;
-      if (descriptionStartMatch.length > 0 && descriptionStartMatch[1] !== '') {
+      if (descriptionStartMatch.length > 0 && descriptionStartMatch[1] !== "") {
         currentSection.addDescriptionLine(descriptionStartMatch[1]);
       }
     }
@@ -100,7 +126,7 @@ export function parseMetadataComments(valuesFilePath, config) {
     if (extraMatch && extraMatch.length > 0) {
       const param = new Parameter(extraMatch[1]);
       param.description = extraMatch[3];
-      param.value = ''; // Set an empty string by default since it won't have a value in the actual YAML
+      param.value = ""; // Set an empty string by default since it won't have a value in the actual YAML
       param.extra = true;
       if (currentSection) {
         param.section = currentSection.name;
@@ -117,14 +143,14 @@ export function parseMetadataComments(valuesFilePath, config) {
  * Returns an array of Parameters parsed from the actual YAML content
  * This object contains the actual type and value of the object
  */
-export function createValuesObject(valuesFilePath) {
-  const resultValues = [];
-  const valuesJSON = YAML.parse(fs.readFileSync(valuesFilePath, 'utf8'));
-  const dottedFormatProperties = dot.dot(valuesJSON);
+export function createValuesObject(valuesFilePath: string): Parameter[] {
+  const resultValues: Parameter[] = [];
+  const valuesJSON = YAML.parse(fs.readFileSync(valuesFilePath, "utf8")) as Record<string, unknown>;
+  const dottedFormatProperties = utils.flattenObject(valuesJSON);
 
   for (let valuePath in dottedFormatProperties) {
     if (Object.prototype.hasOwnProperty.call(dottedFormatProperties, valuePath)) {
-      let value = _.get(valuesJSON, valuePath);
+      let value = utils.getValueByPath(valuesJSON, valuePath);
       // TODO(miguelaeh):
       // Variable to avoid render in the schema parameters with dots in the keys.
       // the ocurrences of this variable inside this function must be deleted after fixing it.
@@ -132,45 +158,51 @@ export function createValuesObject(valuesFilePath) {
       if (value === undefined) {
         // If the value is not found,
         // give a try to our function for complex keys like 'annotations.prometheus.io/scrape'
-        value = _.get(valuesJSON, utils.getArrayPath(valuesJSON, valuePath));
+        value = utils.getValueByPath(valuesJSON, utils.getArrayPath(valuesJSON, valuePath));
         renderInSchema = false;
       }
-      let type = typeof value;
+      let type: string = typeof value;
 
       // Check if the value is a plain array, an array that only contains strings,
       // those strings should not have metadata, the metadata must exist for the array itself
-      const valuePathSplit = valuePath.split('[');
+      const valuePathSplit = valuePath.split("[");
       if (valuePathSplit.length > 1) {
         // The value is inside an array
         const arrayPrefix = utils.getArrayPrefix(valuePath);
         let isPlainArray = true; // Assume it is plain until we prove the opposite
-        _.get(valuesJSON, utils.getArrayPath(valuesJSON, arrayPrefix)).forEach((e) => {
-          if (typeof e !== 'string') {
-            isPlainArray = false;
-          }
-        });
+        const arrayValue = utils.getValueByPath(
+          valuesJSON,
+          utils.getArrayPath(valuesJSON, arrayPrefix),
+        );
+        if (Array.isArray(arrayValue)) {
+          arrayValue.forEach((e) => {
+            if (typeof e !== "string") {
+              isPlainArray = false;
+            }
+          });
+        }
         if (isPlainArray) {
-          value = _.get(valuesJSON, utils.getArrayPath(valuesJSON, arrayPrefix));
+          value = arrayValue;
           valuePath = arrayPrefix;
         }
       }
 
       // Map the javascript 'null' to golang 'nil'
       if (value === null) {
-        value = 'nil';
+        value = "nil";
       }
 
       // When an element is an object it can be object or array
-      if (typeof value === 'object') {
+      if (typeof value === "object") {
         if (Array.isArray(value)) {
-          type = 'array';
+          type = "array";
         }
       }
 
       // The existence check is needed to avoid duplicate plain array keys
       if (!resultValues.find((v) => v.name === valuePath)) {
         const param = new Parameter(valuePath);
-        if (!param.value) param.value = value;
+        if (!param.value) param.value = value as (typeof param)["value"];
         param.type = type;
         param.schema = renderInSchema;
         resultValues.push(param);

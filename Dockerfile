@@ -1,8 +1,9 @@
 #
+# Copyright Cyrus Ho. All Rights Reserved.
 # Copyright Broadcom, Inc. All Rights Reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
-FROM bitnamilegacy/node:24
+FROM oven/bun:1
 
 LABEL org.opencontainers.image.authors="https://bitnami.com/contact" \
       org.opencontainers.image.description="Readme Generator For Helm" \
@@ -12,9 +13,10 @@ LABEL org.opencontainers.image.authors="https://bitnami.com/contact" \
 
 COPY . /app
 WORKDIR /app
-RUN npm install
-RUN ln -s /app/bin/index.js /app/bin/readme-generator
+RUN bun install --frozen-lockfile
+RUN bun run build
+RUN ln -s /app/dist/bin/index.js /app/dist/bin/readme-generator
 
-ENV PATH="/app/bin:$PATH"
+ENV PATH="/app/dist/bin:$PATH"
 
 CMD ["readme-generator"]

@@ -1,0 +1,23 @@
+#!/usr/bin/env node
+
+/*
+ * Copyright Cyrus Ho. All Rights Reserved.
+ * Copyright Broadcom, Inc. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import { program } from "commander";
+import runReadmeGenerator from "../index.ts";
+
+program
+  .option("-v, --values <path>", "Path to the values.yaml file")
+  .option("-r, --readme <path>", "Path to the README.md file")
+  .option("-c, --config <path>", "Path to the config file")
+  .option("-s, --schema <path>", "Path for the OpenAPI Schema output file")
+  .option("--version", "Show Readme Generator version");
+
+program.parse(process.argv);
+
+const options = program.opts();
+
+runReadmeGenerator(options);

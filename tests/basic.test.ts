@@ -1,6 +1,6 @@
-
-import fs from 'node:fs';
-import * as tempModule from 'temp';
+import fs from "node:fs";
+import * as tempModule from "temp";
+import { test, expect } from "vitest";
 
 // Initialize temp package
 const temp = tempModule.track();
@@ -21,12 +21,14 @@ const expectedSchemaPath = `${__dirname}/expected-schema.json`; // File that mus
 const testReadConfigFile = `${__dirname}/test-readme.config.md`; // Configuration file
 const testConfigFile = `${__dirname}/test-config.json`; // Configuration file
 const expectedReadmeConfig = `${__dirname}/expected-readme.config.md`; // File where the content will end after the tool is executed
+const testValuesSubsectionPath = `${__dirname}/test-values.subsection.yaml`; // Values with subsection metadata
+const expectedReadmeSubsectionPath = `${__dirname}/expected-readme.subsection.md`; // Expected README when subsection metadata is rendered
 
-import runReadmeGenerator from '../index.js';
+import runReadmeGenerator from "../index.ts";
 
-test('Check basic functionality. First execution', () => {
+test("Check basic functionality. First execution", () => {
   // Create empty temp file with 'Parameters' section
-  const tempFile = temp.path({ prefix: 'readme-generator'});
+  const tempFile = temp.path({ prefix: "readme-generator" });
   const parametersHeader = "# Example\r\n\n## Parameters";
   fs.writeFileSync(tempFile, parametersHeader);
   // Run readme generator with the test files
@@ -41,7 +43,7 @@ test('Check basic functionality. First execution', () => {
   temp.cleanupSync();
 });
 
-test('Check basic functionality', () => {
+test("Check basic functionality", () => {
   // Run readme generator with the test files
   const options = {
     readme: testReadmeSubsequentSectionsPath,
@@ -50,10 +52,12 @@ test('Check basic functionality', () => {
   runReadmeGenerator(options);
 
   // Check the output is the expected one
-  expect(fs.readFileSync(testReadmeSubsequentSectionsPath)).toEqual(fs.readFileSync(expectedReadmeSubsequentSectionsPath));
+  expect(fs.readFileSync(testReadmeSubsequentSectionsPath)).toEqual(
+    fs.readFileSync(expectedReadmeSubsequentSectionsPath),
+  );
 });
 
-test('Check basic functionality as last in README', () => {
+test("Check basic functionality as last in README", () => {
   // Run readme generator with the test files
   const options = {
     readme: testReadmeLastSectionPath,
@@ -62,10 +66,12 @@ test('Check basic functionality as last in README', () => {
   runReadmeGenerator(options);
 
   // Check the output is the expected one
-  expect(fs.readFileSync(testReadmeLastSectionPath)).toEqual(fs.readFileSync(expectedReadmeLastSectionPath));
+  expect(fs.readFileSync(testReadmeLastSectionPath)).toEqual(
+    fs.readFileSync(expectedReadmeLastSectionPath),
+  );
 });
 
-test('Check basic functionality as last section in README but with text below', () => {
+test("Check basic functionality as last section in README but with text below", () => {
   // Run readme generator with the test files
   const options = {
     readme: testReadmeLastSectionWithTextBelowPath,
@@ -74,10 +80,12 @@ test('Check basic functionality as last section in README but with text below', 
   runReadmeGenerator(options);
 
   // Check the output is the expected one
-  expect(fs.readFileSync(testReadmeLastSectionWithTextBelowPath)).toEqual(fs.readFileSync(expectedReadmeLastSectionWithTextBelowPath));
+  expect(fs.readFileSync(testReadmeLastSectionWithTextBelowPath)).toEqual(
+    fs.readFileSync(expectedReadmeLastSectionWithTextBelowPath),
+  );
 });
 
-test('Check schema', () => {
+test("Check schema", () => {
   // Run readme generator with the test files
   const options = {
     schema: testSchemaPath,
@@ -89,7 +97,7 @@ test('Check schema', () => {
   expect(fs.readFileSync(testSchemaPath)).toEqual(fs.readFileSync(expectedSchemaPath));
 });
 
-test('Check config file', () => {
+test("Check config file", () => {
   // Run readme generator with the test files
   const options = {
     readme: testReadConfigFile,
@@ -100,4 +108,24 @@ test('Check config file', () => {
 
   // Check the output is the expected one
   expect(fs.readFileSync(testReadConfigFile)).toEqual(fs.readFileSync(expectedReadmeConfig));
+});
+
+test("Check subsection metadata rendering", () => {
+  // Create empty temp file with 'Parameters' section
+  const tempFile = temp.path({ prefix: "readme-generator-subsection" });
+  const parametersHeader = "# Example\r\n\n## Parameters";
+  fs.writeFileSync(tempFile, parametersHeader);
+
+  // Run readme generator with subsection values file
+  const options = {
+    readme: tempFile,
+    values: testValuesSubsectionPath,
+  };
+  runReadmeGenerator(options);
+
+  // Check the output is the expected one
+  expect(fs.readFileSync(tempFile)).toEqual(fs.readFileSync(expectedReadmeSubsectionPath));
+
+  // Clean temporary file
+  temp.cleanupSync();
 });
