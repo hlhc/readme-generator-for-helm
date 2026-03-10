@@ -1,6 +1,6 @@
 {
   "name": "@hlhc/readme-generator-for-helm",
-  "version": "3.0.1",
+  "version": "4.0.0",
   "description": "Autogenerate READMEs tables and OpenAPI schemas for Helm Charts",
   "main": "./dist/index.js",
   "files": [
