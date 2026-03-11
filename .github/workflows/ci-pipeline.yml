@@ -37,7 +37,7 @@ jobs:
       - name: Linters
         run: |
           bun run lint
-          markdownlint *.md **/*.md
+          markdownlint *.md **/*.md --ignore node_modules
       - name: Tests
         # Run tests if linter fails
         if: always() && steps.bun-install.outcome == 'success'
