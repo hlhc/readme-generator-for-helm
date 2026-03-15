@@ -129,3 +129,68 @@ test("Check subsection metadata rendering", () => {
   // Clean temporary file
   temp.cleanupSync();
 });
+
+test("Check anchor-based README replacement with config file", () => {
+  const tempReadme = temp.path({ prefix: "readme-generator-anchor", suffix: ".md" });
+  const tempConfig = temp.path({ prefix: "readme-generator-anchor-config", suffix: ".json" });
+
+  fs.writeFileSync(
+    tempReadme,
+    [
+      "# Example",
+      "",
+      "## Parameters",
+      "",
+      "<!--readme-generateor-->",
+      "stale generated content",
+      "<!--end-readme-generateor-->",
+    ].join("\n"),
+  );
+
+  fs.writeFileSync(
+    tempConfig,
+    JSON.stringify(
+      {
+        comments: { format: "##" },
+        readme: {
+          anchors: {
+            start: "<!--readme-generateor-->",
+            end: "<!--end-readme-generateor-->",
+          },
+        },
+        tags: {
+          param: "@param",
+          section: "@section",
+          subsection: "@subsection",
+          descriptionStart: "@descriptionStart",
+          descriptionEnd: "@descriptionEnd",
+          skip: "@skip",
+          extra: "@extra",
+        },
+        modifiers: {
+          array: "array",
+          object: "object",
+          string: "string",
+          nullable: "nullable",
+          default: "default",
+        },
+      },
+      null,
+      2,
+    ),
+  );
+
+  runReadmeGenerator({
+    readme: tempReadme,
+    values: testValuesPath,
+    config: tempConfig,
+  });
+
+  const result = fs.readFileSync(tempReadme, "utf-8");
+  expect(result).toContain("<!--readme-generateor-->");
+  expect(result).toContain("<!--end-readme-generateor-->");
+  expect(result).toContain("image.registry");
+  expect(result).not.toContain("stale generated content");
+
+  temp.cleanupSync();
+});

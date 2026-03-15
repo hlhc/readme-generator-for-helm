@@ -2,6 +2,9 @@
     "comments": {
       "format": "##"
     },
+    "readme": {
+      "paramsSectionTitle": "New Parameters Section"
+    },
     "tags": {
       "param": "@param",
       "section": "@section",
@@ -17,9 +20,6 @@
       "string": "string",
       "nullable": "nullable",
       "default": "default"
-    },
-    "regexp": {
-      "paramsSectionTitle": "New Parameters Section"
     }
   }
   

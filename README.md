@@ -45,6 +45,20 @@ The table that will be inserted into the `readme.md` will have the following str
 
 The number of `#` characters needed for the section titles is dynamically calculated, and the title of the `Parameters` section can be configured via the [configuration file](#configuration-file). The `README.md` file with a `## Parameters` section must be created before running the tool, the `Parameters` section should have two `#` or more symbols.
 
+As an alternative, you can configure start/end anchors in the [configuration file](#configuration-file) and the tool will replace the content between those anchors. Example anchors:
+
+```html
+<!--readme-generateor-->
+<!--end-readme-generateor-->
+```
+
+Use only one targeting mode at a time:
+
+- `readme.paramsSectionTitle`
+- `readme.anchors.start` + `readme.anchors.end`
+
+If both are configured, the tool fails with an error.
+
 ## Requirements
 
 The project has been developed and tested with node version `22.x`.
@@ -173,6 +187,13 @@ The configuration file has the following structure:
   "comments": {
     "format": "##"                               <-- Which is the comments format in the values YAML
   },
+  "readme": {
+    "paramsSectionTitle": "Parameters",          <-- Optional: title of the section to replace in README.md
+    "anchors": {
+      "start": "<!--readme-generateor-->",       <-- Optional: start anchor in README.md for generated content
+      "end": "<!--end-readme-generateor-->"      <-- Optional: end anchor in README.md for generated content
+    }
+  },
   "tags": {
     "param": "@param",                           <-- Tag that indicates a parameter
     "section": "@section",                       <-- Tag that indicates a section
@@ -187,9 +208,6 @@ The configuration file has the following structure:
     "object": "object",                          <-- Modifier that indicates an object type
     "string": "string",                          <-- Modifier that indicates a string type
     "nullable": "nullable"                       <-- Modifier that indicates a parameter that can be set to null
-  },
-  "regexp": {
-    "paramsSectionTitle": "Parameters"           <-- Title of the parameters section to replace in the README.md
   }
 }
 ```

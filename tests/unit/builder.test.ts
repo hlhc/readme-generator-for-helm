@@ -10,6 +10,7 @@ import type { Config } from "@lib/types.ts";
 
 const config: Config = {
   comments: { format: "#" },
+  readme: { paramsSectionTitle: "Parameters" },
   tags: {
     param: "@param",
     section: "@section",
@@ -25,7 +26,6 @@ const config: Config = {
     nullable: "nullable",
     default: "default",
   },
-  regexp: { paramsSectionTitle: "Parameters" },
 };
 
 function makeParam(name: string, value?: unknown, type = "string"): Parameter {

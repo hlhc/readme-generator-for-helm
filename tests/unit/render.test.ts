@@ -14,6 +14,7 @@ const temp = tempModule.track();
 
 const config: Config = {
   comments: { format: "#" },
+  readme: { paramsSectionTitle: "Parameters" },
   tags: {
     param: "@param",
     section: "@section",
@@ -29,7 +30,27 @@ const config: Config = {
     nullable: "nullable",
     default: "default",
   },
-  regexp: { paramsSectionTitle: "Parameters" },
+};
+
+const configWithAnchors: Config = {
+  ...config,
+  readme: {
+    anchors: {
+      start: "<!--readme-generateor-->",
+      end: "<!--end-readme-generateor-->",
+    },
+  },
+};
+
+const configWithBothTargets: Config = {
+  ...config,
+  readme: {
+    paramsSectionTitle: "Parameters",
+    anchors: {
+      start: "<!--readme-generateor-->",
+      end: "<!--end-readme-generateor-->",
+    },
+  },
 };
 
 function writeTempReadme(content: string): string {
@@ -125,6 +146,48 @@ describe("insertReadmeTable", () => {
     insertReadmeTable(file, sections, config);
     const result = fs.readFileSync(file, "utf-8");
     expect(result).toContain("#### Sub"); // ## + # (level 0 gets ###, level 1 gets ####)
+    temp.cleanupSync();
+  });
+
+  test("replaces content between configured anchors", () => {
+    const file = writeTempReadme(
+      [
+        "# Chart",
+        "",
+        "## Parameters",
+        "",
+        "<!--readme-generateor-->",
+        "old content",
+        "<!--end-readme-generateor-->",
+        "",
+        "## Next",
+      ].join("\n"),
+    );
+    const p = makeParam("anchor.key", "Anchor description", "anchor-value");
+    insertReadmeTable(file, [makeSection("Config", [p])], configWithAnchors);
+    const result = fs.readFileSync(file, "utf-8");
+    expect(result).toContain("anchor.key");
+    expect(result).not.toContain("old content");
+    expect(result).toContain("<!--readme-generateor-->");
+    expect(result).toContain("<!--end-readme-generateor-->");
+    temp.cleanupSync();
+  });
+
+  test("throws when configured anchors are missing", () => {
+    const file = writeTempReadme("# Chart\n\n## Parameters\n");
+    const p = makeParam("anchor.key", "Anchor description", "anchor-value");
+    expect(() => insertReadmeTable(file, [makeSection("Config", [p])], configWithAnchors)).toThrow(
+      "ERROR: error getting current anchors section from README",
+    );
+    temp.cleanupSync();
+  });
+
+  test("throws when both section title and anchors are configured", () => {
+    const file = writeTempReadme("# Chart\n\n## Parameters\n");
+    const p = makeParam("anchor.key", "Anchor description", "anchor-value");
+    expect(() => insertReadmeTable(file, [makeSection("Config", [p])], configWithBothTargets)).toThrow(
+      "ERROR: invalid README target configuration. Use either readme.paramsSectionTitle or readme.anchors.start/end",
+    );
     temp.cleanupSync();
   });
 });

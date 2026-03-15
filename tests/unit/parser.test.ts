@@ -13,6 +13,7 @@ const temp = tempModule.track();
 
 const config: Config = {
   comments: { format: "#" },
+  readme: { paramsSectionTitle: "Parameters" },
   tags: {
     param: "@param",
     section: "@section",
@@ -28,7 +29,6 @@ const config: Config = {
     nullable: "nullable",
     default: "default",
   },
-  regexp: { paramsSectionTitle: "Parameters" },
 };
 
 function writeTempYaml(content: string): string {

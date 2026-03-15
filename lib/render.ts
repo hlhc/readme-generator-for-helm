@@ -91,6 +91,51 @@ function renderReadmeTable(
   return fullTable;
 }
 
+function getLineNumberSignsFromHeadingBeforeAnchor(lines: string[], anchorLineIndex: number): string {
+  for (let i = anchorLineIndex - 1; i >= 0; i -= 1) {
+    const match = lines[i].match(/^(#+)\s+/);
+    if (match) {
+      return match[1];
+    }
+  }
+  // Fallback used when no heading exists before the anchor.
+  return "##";
+}
+
+function getReadmeTargetConfig(config: Config): {
+  paramsSectionTitle?: string;
+  startAnchor?: string;
+  endAnchor?: string;
+} {
+  const paramsSectionTitle = config.readme?.paramsSectionTitle?.trim();
+  const startAnchor = config.readme?.anchors?.start?.trim();
+  const endAnchor = config.readme?.anchors?.end?.trim();
+
+  const hasParamsSectionTitle = Boolean(paramsSectionTitle);
+  const hasAnyAnchorValue = Boolean(startAnchor) || Boolean(endAnchor);
+  const hasAnchorPair = Boolean(startAnchor) && Boolean(endAnchor);
+
+  if (hasParamsSectionTitle && hasAnyAnchorValue) {
+    throw new Error(
+      "ERROR: invalid README target configuration. Use either readme.paramsSectionTitle or readme.anchors.start/end",
+    );
+  }
+
+  if (!hasParamsSectionTitle && !hasAnchorPair) {
+    throw new Error(
+      "ERROR: invalid README target configuration. Define readme.paramsSectionTitle or readme.anchors.start/end",
+    );
+  }
+
+  if (hasAnyAnchorValue && !hasAnchorPair) {
+    throw new Error(
+      "ERROR: invalid README target configuration. readme.anchors.start and readme.anchors.end must both be defined",
+    );
+  }
+
+  return { paramsSectionTitle, startAnchor, endAnchor };
+}
+
 /*
  * Add table to README.md
  */
@@ -101,13 +146,32 @@ export function insertReadmeTable(
 ): void {
   const data = fs.readFileSync(readmeFilePath, "utf-8");
   const lines = data.split(/\r?\n/);
+  const target = getReadmeTargetConfig(config);
+
+  if (target.startAnchor && target.endAnchor) {
+    const startAnchorIndex = lines.findIndex((line) => line.trim() === target.startAnchor);
+    const endAnchorIndex = lines.findIndex(
+      (line, index) => index > startAnchorIndex && line.trim() === target.endAnchor,
+    );
+
+    if (startAnchorIndex === -1 || endAnchorIndex === -1 || endAnchorIndex <= startAnchorIndex) {
+      throw new Error("ERROR: error getting current anchors section from README");
+    }
+
+    const lineNumberSigns = getLineNumberSignsFromHeadingBeforeAnchor(lines, startAnchorIndex);
+    const newParamsSection = renderReadmeTable(sections, `${lineNumberSigns}#`);
+    lines.splice(startAnchorIndex + 1, endAnchorIndex - startAnchorIndex - 1, ...newParamsSection.split(/\r?\n/));
+    fs.writeFileSync(readmeFilePath, lines.join("\n"));
+    return;
+  }
+
   let lineNumberSigns = ""; // Store section # starting symbols
   // This array contains the index of the first and the last line to update in the README file
   const paramsSectionLimits: number[] = [];
   lines.forEach((line, i) => {
     // Find parameters section start
     // use minimun two # symbols since just one is the README title
-    const match = line.match(new RegExp(`^(##+) ${config.regexp.paramsSectionTitle}`));
+    const match = line.match(new RegExp(`^(##+) ${target.paramsSectionTitle}`));
     if (match) {
       lineNumberSigns = match[1];
       paramsSectionLimits.push(i + 1);

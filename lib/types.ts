@@ -6,6 +6,13 @@
 
 export interface Config {
   comments: { format: string };
+  readme?: {
+    paramsSectionTitle?: string;
+    anchors?: {
+      start: string;
+      end: string;
+    };
+  };
   tags: {
     param: string;
     section: string;
@@ -21,9 +28,6 @@ export interface Config {
     string: string;
     nullable: string;
     default: string;
-  };
-  regexp: {
-    paramsSectionTitle: string;
   };
 }
 

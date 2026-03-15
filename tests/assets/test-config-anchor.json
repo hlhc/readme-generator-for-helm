@@ -3,10 +3,9 @@
     "format": "##"
   },
   "readme": {
-    "paramsSectionTitle": "Parameters",
     "anchors": {
-      "start": "",
-      "end": ""
+      "start": "<!--readme-generateor-->",
+      "end": "<!--end-readme-generateor-->"
     }
   },
   "tags": {

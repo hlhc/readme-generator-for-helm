@@ -151,3 +151,20 @@ test("generates README with subsection metadata", () => {
     fs.readFileSync(path.join(assetsDir, "expected-readme.subsection.md")),
   );
 });
+
+test("uses anchor-based README replacement via --config", () => {
+  const tempReadme = copyToTemp(path.join(assetsDir, "test-readme-anchor.md"));
+
+  const { exitCode } = runCLI([
+    "--readme", tempReadme,
+    "--values", path.join(assetsDir, "test-values.yaml"),
+    "--config", path.join(assetsDir, "test-config-anchor.json"),
+  ]);
+
+  expect(exitCode).toBe(0);
+  const result = fs.readFileSync(tempReadme, "utf8");
+  expect(result).toContain("<!--readme-generateor-->");
+  expect(result).toContain("<!--end-readme-generateor-->");
+  expect(result).toContain("image.registry");
+  expect(result).not.toContain("stale generated content");
+});
