@@ -55,7 +55,7 @@ export default function runReadmeGenerator(options: RunOptions): void {
       parsedMetadata.sections.forEach((section) => {
         section.parameters = buildParamsToRenderList(section.parameters, config);
       });
-      insertReadmeTable(readmeFilePath, parsedMetadata.sections, config);
+      insertReadmeTable(readmeFilePath, parsedMetadata.sections, config, options.html);
     }
 
     if (schemaFilePath) {

@@ -25,17 +25,10 @@ interface SchemaEntry {
   properties?: SchemaProperties;
 }
 
-interface TableRow {
-  name: string;
-  description: string;
-  value: unknown;
-  extra: boolean;
-}
-
 /*
  * Converts an array of objects of the same type to markdown table
  */
-function createMarkdownTable(objArray: TableRow[]): string {
+function createMarkdownTable(objArray: Parameter[]): string {
   const modifiedArray = objArray.map((e) => {
     if (e.value === "") {
       e.value = '""';
@@ -50,6 +43,53 @@ function createMarkdownTable(objArray: TableRow[]): string {
   return table([["Name", "Description", "Value"], ...modifiedArray]);
 }
 
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+/*
+ * Converts an array of objects of the same type to an HTML table.
+ * Object and array values are pretty-printed as multiline JSON in a <pre><code> block.
+ * Intended for MDX files that support embedded HTML.
+ * All user-supplied content is HTML-escaped to prevent XSS.
+ */
+function createHtmlTable(objArray: Parameter[]): string {
+  const rows = objArray.map((e) => {
+    let valueCell: string;
+    if (e.extra) {
+      valueCell = "";
+    } else if (e.value === "") {
+      valueCell = `<code>""</code>`;
+    } else if (typeof e.value === "object" && e.value !== null) {
+      const pretty = escapeHtml(JSON.stringify(e.value, null, 2));
+      valueCell = `<pre><code class="language-json">${pretty}</code></pre>`;
+    } else {
+      valueCell = `<code>${escapeHtml(String(e.value))}</code>`;
+    }
+    return `    <tr>\n      <td><code>${escapeHtml(e.name)}</code></td>\n      <td>${escapeHtml(e.description)}</td>\n      <td>${valueCell}</td>\n    </tr>`;
+  });
+
+  return [
+    "<table>",
+    "  <thead>",
+    "    <tr>",
+    "      <th>Name</th>",
+    "      <th>Description</th>",
+    "      <th>Value</th>",
+    "    </tr>",
+    "  </thead>",
+    "  <tbody>",
+    ...rows,
+    "  </tbody>",
+    "</table>",
+  ].join("\n");
+}
+
 /*
  * Returns the section rendered
  */
@@ -61,6 +101,7 @@ function renderSection(
     level,
   }: { name: string; description: string; parameters: Parameter[]; level?: number },
   lineNumberSigns: string,
+  html = false,
 ): string {
   let sectionTable = "";
   const headingPrefix = `${lineNumberSigns}${"#".repeat(level ?? 0)}`;
@@ -70,7 +111,7 @@ function renderSection(
     sectionTable += `${description}\r\n\n`; // section description
   }
   if (parameters.length > 0) {
-    sectionTable += createMarkdownTable(parameters as unknown as TableRow[]); // section body parameters
+    sectionTable += html ? createHtmlTable(parameters) : createMarkdownTable(parameters); // section body parameters
     sectionTable += "\r\n";
   }
   return sectionTable;
@@ -82,16 +123,20 @@ function renderSection(
 function renderReadmeTable(
   sections: { name: string; description: string; parameters: Parameter[]; level?: number }[],
   lineNumberSigns: string,
+  html = false,
 ): string {
   let fullTable = "";
 
   for (const section of sections) {
-    fullTable += renderSection(section, lineNumberSigns);
+    fullTable += renderSection(section, lineNumberSigns, html);
   }
   return fullTable;
 }
 
-function getLineNumberSignsFromHeadingBeforeAnchor(lines: string[], anchorLineIndex: number): string {
+function getLineNumberSignsFromHeadingBeforeAnchor(
+  lines: string[],
+  anchorLineIndex: number,
+): string {
   for (let i = anchorLineIndex - 1; i >= 0; i -= 1) {
     const match = lines[i].match(/^(#+)\s+/);
     if (match) {
@@ -143,6 +188,7 @@ export function insertReadmeTable(
   readmeFilePath: string,
   sections: { name: string; description: string; parameters: Parameter[]; level?: number }[],
   config: Config,
+  html = false,
 ): void {
   const data = fs.readFileSync(readmeFilePath, "utf-8");
   const lines = data.split(/\r?\n/);
@@ -159,8 +205,12 @@ export function insertReadmeTable(
     }
 
     const lineNumberSigns = getLineNumberSignsFromHeadingBeforeAnchor(lines, startAnchorIndex);
-    const newParamsSection = renderReadmeTable(sections, `${lineNumberSigns}#`);
-    lines.splice(startAnchorIndex + 1, endAnchorIndex - startAnchorIndex - 1, ...newParamsSection.split(/\r?\n/));
+    const newParamsSection = renderReadmeTable(sections, `${lineNumberSigns}#`, html);
+    lines.splice(
+      startAnchorIndex + 1,
+      endAnchorIndex - startAnchorIndex - 1,
+      ...newParamsSection.split(/\r?\n/),
+    );
     fs.writeFileSync(readmeFilePath, lines.join("\n"));
     return;
   }
@@ -223,7 +273,7 @@ export function insertReadmeTable(
 
   console.log("INFO: Inserting the new table into the README...");
   // Build the table adding the proper number of # to the section headers
-  const newParamsSection = renderReadmeTable(sections, `${lineNumberSigns}#`);
+  const newParamsSection = renderReadmeTable(sections, `${lineNumberSigns}#`, html);
   // Delete the old parameters section
   lines.splice(paramsSectionLimits[0], paramsSectionLimits[1] - paramsSectionLimits[0] + 1);
   // Add the new parameters section

@@ -14,6 +14,10 @@ program
   .option("-r, --readme <path>", "Path to the README.md file")
   .option("-c, --config <path>", "Path to the config file")
   .option("-s, --schema <path>", "Path for the OpenAPI Schema output file")
+  .option(
+    "--html",
+    "Output full HTML tables (suitable for MDX); formats JSON values as multiline code blocks",
+  )
   .option("--version", "Show Readme Generator version");
 
 program.parse(process.argv);

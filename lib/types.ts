@@ -36,5 +36,6 @@ export interface RunOptions {
   readme?: string;
   config?: string;
   schema?: string;
+  html?: boolean;
   version?: boolean;
 }

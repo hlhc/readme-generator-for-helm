@@ -56,8 +56,10 @@ test("generates README table from first execution (empty Parameters section)", (
   fs.writeFileSync(tempFile, "# Example\r\n\n## Parameters");
 
   const { exitCode } = runCLI([
-    "--readme", tempFile,
-    "--values", path.join(assetsDir, "test-values.yaml"),
+    "--readme",
+    tempFile,
+    "--values",
+    path.join(assetsDir, "test-values.yaml"),
   ]);
 
   expect(exitCode).toBe(0);
@@ -70,8 +72,10 @@ test("updates existing README with parameters table", () => {
   const tempReadme = copyToTemp(path.join(assetsDir, "test-readme.md"));
 
   const { exitCode } = runCLI([
-    "--readme", tempReadme,
-    "--values", path.join(assetsDir, "test-values.yaml"),
+    "--readme",
+    tempReadme,
+    "--values",
+    path.join(assetsDir, "test-values.yaml"),
   ]);
 
   expect(exitCode).toBe(0);
@@ -84,8 +88,10 @@ test("updates README when Parameters is the last section", () => {
   const tempReadme = copyToTemp(path.join(assetsDir, "test-readme.last-section.md"));
 
   const { exitCode } = runCLI([
-    "--readme", tempReadme,
-    "--values", path.join(assetsDir, "test-values.yaml"),
+    "--readme",
+    tempReadme,
+    "--values",
+    path.join(assetsDir, "test-values.yaml"),
   ]);
 
   expect(exitCode).toBe(0);
@@ -98,8 +104,10 @@ test("updates README when Parameters is last section but has text below", () => 
   const tempReadme = copyToTemp(path.join(assetsDir, "test-readme.last-section-text-below.md"));
 
   const { exitCode } = runCLI([
-    "--readme", tempReadme,
-    "--values", path.join(assetsDir, "test-values.yaml"),
+    "--readme",
+    tempReadme,
+    "--values",
+    path.join(assetsDir, "test-values.yaml"),
   ]);
 
   expect(exitCode).toBe(0);
@@ -112,8 +120,10 @@ test("generates OpenAPI schema file", () => {
   const tempSchema = copyToTemp(path.join(assetsDir, "test-schema.json"));
 
   const { exitCode } = runCLI([
-    "--schema", tempSchema,
-    "--values", path.join(assetsDir, "test-values.yaml"),
+    "--schema",
+    tempSchema,
+    "--values",
+    path.join(assetsDir, "test-values.yaml"),
   ]);
 
   expect(exitCode).toBe(0);
@@ -126,9 +136,12 @@ test("uses custom --config file", () => {
   const tempReadme = copyToTemp(path.join(assetsDir, "test-readme.config.md"));
 
   const { exitCode } = runCLI([
-    "--readme", tempReadme,
-    "--values", path.join(assetsDir, "test-values.yaml"),
-    "--config", path.join(assetsDir, "test-config.json"),
+    "--readme",
+    tempReadme,
+    "--values",
+    path.join(assetsDir, "test-values.yaml"),
+    "--config",
+    path.join(assetsDir, "test-config.json"),
   ]);
 
   expect(exitCode).toBe(0);
@@ -142,8 +155,10 @@ test("generates README with subsection metadata", () => {
   fs.writeFileSync(tempFile, "# Example\r\n\n## Parameters");
 
   const { exitCode } = runCLI([
-    "--readme", tempFile,
-    "--values", path.join(assetsDir, "test-values.subsection.yaml"),
+    "--readme",
+    tempFile,
+    "--values",
+    path.join(assetsDir, "test-values.subsection.yaml"),
   ]);
 
   expect(exitCode).toBe(0);
@@ -156,9 +171,12 @@ test("uses anchor-based README replacement via --config", () => {
   const tempReadme = copyToTemp(path.join(assetsDir, "test-readme-anchor.md"));
 
   const { exitCode } = runCLI([
-    "--readme", tempReadme,
-    "--values", path.join(assetsDir, "test-values.yaml"),
-    "--config", path.join(assetsDir, "test-config-anchor.json"),
+    "--readme",
+    tempReadme,
+    "--values",
+    path.join(assetsDir, "test-values.yaml"),
+    "--config",
+    path.join(assetsDir, "test-config-anchor.json"),
   ]);
 
   expect(exitCode).toBe(0);

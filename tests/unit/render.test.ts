@@ -120,15 +120,9 @@ describe("insertReadmeTable", () => {
   });
 
   test("handles Parameters section that is not the last section", () => {
-    const content = [
-      "# Chart",
-      "",
-      "## Parameters",
-      "",
-      "## Other Section",
-      "",
-      "Some text.",
-    ].join("\n");
+    const content = ["# Chart", "", "## Parameters", "", "## Other Section", "", "Some text."].join(
+      "\n",
+    );
     const file = writeTempReadme(content);
     const p = makeParam("my.param", "Desc", "val");
     const sections = [makeSection("Config", [p])];
@@ -185,9 +179,130 @@ describe("insertReadmeTable", () => {
   test("throws when both section title and anchors are configured", () => {
     const file = writeTempReadme("# Chart\n\n## Parameters\n");
     const p = makeParam("anchor.key", "Anchor description", "anchor-value");
-    expect(() => insertReadmeTable(file, [makeSection("Config", [p])], configWithBothTargets)).toThrow(
+    expect(() =>
+      insertReadmeTable(file, [makeSection("Config", [p])], configWithBothTargets),
+    ).toThrow(
       "ERROR: invalid README target configuration. Use either readme.paramsSectionTitle or readme.anchors.start/end",
     );
+    temp.cleanupSync();
+  });
+});
+
+describe("insertReadmeTable (HTML mode)", () => {
+  test("emits an HTML table structure", () => {
+    const file = writeTempReadme("# Chart\n\n## Parameters\n");
+    const p = makeParam("config.key", "A scalar value", "hello");
+    insertReadmeTable(file, [makeSection("Config", [p])], config, true);
+    const result = fs.readFileSync(file, "utf-8");
+    expect(result).toContain("<table>");
+    expect(result).toContain("<thead>");
+    expect(result).toContain("<tbody>");
+    expect(result).toContain("</table>");
+    temp.cleanupSync();
+  });
+
+  test("wraps scalar value in <code>", () => {
+    const file = writeTempReadme("# Chart\n\n## Parameters\n");
+    const p = makeParam("my.param", "Some description", "scalar-value");
+    insertReadmeTable(file, [makeSection("Config", [p])], config, true);
+    const result = fs.readFileSync(file, "utf-8");
+    expect(result).toContain("<code>scalar-value</code>");
+    temp.cleanupSync();
+  });
+
+  test("renders empty-string value as <code>\"\"</code>", () => {
+    const file = writeTempReadme("# Chart\n\n## Parameters\n");
+    const p = makeParam("my.param", "Empty value param", "");
+    insertReadmeTable(file, [makeSection("Config", [p])], config, true);
+    const result = fs.readFileSync(file, "utf-8");
+    expect(result).toContain(`<code>""</code>`);
+    temp.cleanupSync();
+  });
+
+  test("pretty-prints object value as multiline JSON in <pre><code>", () => {
+    const file = writeTempReadme("# Chart\n\n## Parameters\n");
+    const p = makeParam("my.obj", "An object", { key: "val", num: 1 });
+    p.type = "object";
+    insertReadmeTable(file, [makeSection("Config", [p])], config, true);
+    const result = fs.readFileSync(file, "utf-8");
+    expect(result).toContain(`<pre><code class="language-json">`);
+    // multiline: should contain a newline inside the JSON block
+    expect(result).toMatch(/<pre><code class="language-json">[\s\S]*\n[\s\S]*<\/code><\/pre>/);
+    temp.cleanupSync();
+  });
+
+  test("pretty-prints array value as multiline JSON in <pre><code>", () => {
+    const file = writeTempReadme("# Chart\n\n## Parameters\n");
+    const p = makeParam("my.arr", "An array", ["a", "b"]);
+    p.type = "array";
+    insertReadmeTable(file, [makeSection("Config", [p])], config, true);
+    const result = fs.readFileSync(file, "utf-8");
+    expect(result).toContain(`<pre><code class="language-json">`);
+    expect(result).toMatch(/<pre><code class="language-json">[\s\S]*\n[\s\S]*<\/code><\/pre>/);
+    temp.cleanupSync();
+  });
+
+  test("HTML-escapes name and description to prevent XSS", () => {
+    const file = writeTempReadme("# Chart\n\n## Parameters\n");
+    const p = makeParam("<script>alert(1)</script>", "<b>desc</b> & more", "val");
+    insertReadmeTable(file, [makeSection("Config", [p])], config, true);
+    const result = fs.readFileSync(file, "utf-8");
+    expect(result).not.toContain("<script>");
+    expect(result).toContain("&lt;script&gt;");
+    expect(result).toContain("&lt;b&gt;desc&lt;/b&gt; &amp; more");
+    temp.cleanupSync();
+  });
+
+  test("HTML-escapes scalar value to prevent XSS", () => {
+    const file = writeTempReadme("# Chart\n\n## Parameters\n");
+    const p = makeParam("safe.key", "desc", `<img src=x onerror="alert(1)">`);
+    insertReadmeTable(file, [makeSection("Config", [p])], config, true);
+    const result = fs.readFileSync(file, "utf-8");
+    expect(result).not.toContain("<img");
+    expect(result).toContain("&lt;img");
+    temp.cleanupSync();
+  });
+
+  test("HTML-escapes JSON object values to prevent XSS", () => {
+    const file = writeTempReadme("# Chart\n\n## Parameters\n");
+    const p = makeParam("my.obj", "desc", { key: "<script>evil()</script>" });
+    p.type = "object";
+    insertReadmeTable(file, [makeSection("Config", [p])], config, true);
+    const result = fs.readFileSync(file, "utf-8");
+    expect(result).not.toContain("<script>");
+    expect(result).toContain("&lt;script&gt;");
+    temp.cleanupSync();
+  });
+
+  test("renders empty value cell for extra parameters", () => {
+    const file = writeTempReadme("# Chart\n\n## Parameters\n");
+    const p = makeParam("extra.key", "An extra param", "some-value");
+    p.extra = true;
+    insertReadmeTable(file, [makeSection("Config", [p])], config, true);
+    const result = fs.readFileSync(file, "utf-8");
+    // value cell should be empty — no <code>some-value</code>
+    expect(result).not.toContain("<code>some-value</code>");
+    temp.cleanupSync();
+  });
+
+  test("works with anchor-based config", () => {
+    const file = writeTempReadme(
+      [
+        "# Chart",
+        "",
+        "## Parameters",
+        "",
+        "<!--readme-generateor-->",
+        "old html content",
+        "<!--end-readme-generateor-->",
+      ].join("\n"),
+    );
+    const p = makeParam("anchor.key", "Anchor description", "anchor-value");
+    insertReadmeTable(file, [makeSection("Config", [p])], configWithAnchors, true);
+    const result = fs.readFileSync(file, "utf-8");
+    expect(result).toContain("<table>");
+    expect(result).toContain("anchor.key");
+    expect(result).not.toContain("old html content");
     temp.cleanupSync();
   });
 });
