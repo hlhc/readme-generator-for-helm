@@ -39,13 +39,6 @@ export function sanitizeProperty(property: string): string {
   return property;
 }
 
-/*
- * Check if the specifier modifier in on the modifiers list of the parameter
- */
-export function containsModifier(parameter: Parameter, modifier: string): boolean {
-  return !!parameter.modifiers.find((m) => m === modifier);
-}
-
 export function cloneParameters(parameters: Parameter[]): Parameter[] {
   return parameters.map((parameter) => {
     const clone = new Parameter(parameter.name);

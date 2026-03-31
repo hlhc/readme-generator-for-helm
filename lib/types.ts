@@ -23,10 +23,6 @@ export interface Config {
     extra: string;
   };
   modifiers: {
-    array: string;
-    object: string;
-    string: string;
-    nullable: string;
     default: string;
   };
 }

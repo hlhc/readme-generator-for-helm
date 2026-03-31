@@ -24,10 +24,6 @@ const config: Config = {
     extra: "@extra",
   },
   modifiers: {
-    array: "array",
-    object: "object",
-    string: "string",
-    nullable: "nullable",
     default: "default",
   },
 };
@@ -323,7 +319,7 @@ describe("renderOpenAPISchema", () => {
     const file = temp.path({ suffix: ".json" });
     const p = makeParam("nilKey", "Nil key", "nil");
     p.type = "null";
-    p.modifiers = []; // not nullable
+    p.nullable = false; // not nullable
     expect(() => renderOpenAPISchema(file, [p], config)).toThrow("Invalid type 'nil'");
     temp.cleanupSync();
   });

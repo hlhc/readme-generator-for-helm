@@ -23,10 +23,6 @@ const config: Config = {
     extra: "@extra",
   },
   modifiers: {
-    array: "array",
-    object: "object",
-    string: "string",
-    nullable: "nullable",
     default: "default",
   },
 };
@@ -60,10 +56,58 @@ describe("parseMetadataComments", () => {
     temp.cleanupSync();
   });
 
-  test("parses a param tag with modifiers", () => {
-    const file = writeTempYaml("# @section S\n# @param arr [array] An array\n");
+  test("parses a param tag with array type annotation", () => {
+    const file = writeTempYaml("# @section S\n# @param {string[]} arr An array\n");
     const metadata = parseMetadataComments(file, config);
-    expect(metadata.parameters[0].modifiers).toEqual(["array"]);
+    expect(metadata.parameters[0].typeAnnotation).toBe("string[]");
+    temp.cleanupSync();
+  });
+
+  test("parses a nullable type annotation {?}", () => {
+    const file = writeTempYaml("# @section S\n# @param {?} nul Nullable param\n");
+    const metadata = parseMetadataComments(file, config);
+    expect(metadata.parameters[0].name).toBe("nul");
+    expect(metadata.parameters[0].nullable).toBe(true);
+    expect(metadata.parameters[0].description).toBe("Nullable param");
+    temp.cleanupSync();
+  });
+
+  test("parses a nullable type annotation {string?}", () => {
+    const file = writeTempYaml("# @section S\n# @param {string?} val Nullable string\n");
+    const metadata = parseMetadataComments(file, config);
+    expect(metadata.parameters[0].typeAnnotation).toBe("string");
+    expect(metadata.parameters[0].nullable).toBe(true);
+    temp.cleanupSync();
+  });
+
+  test("parses a default value override [default=value]", () => {
+    const file = writeTempYaml("# @section S\n# @param key [default=MY_DEFAULT] Description\nkey: real\n");
+    const metadata = parseMetadataComments(file, config);
+    expect(metadata.parameters[0].name).toBe("key");
+    expect(metadata.parameters[0].defaultOverride).toBe("MY_DEFAULT");
+    expect(metadata.parameters[0].description).toBe("Description");
+    temp.cleanupSync();
+  });
+
+  test("parses type annotation with default value override", () => {
+    const file = writeTempYaml(
+      "# @section S\n# @param {string} key [default=FALLBACK] Description\nkey: real\n",
+    );
+    const metadata = parseMetadataComments(file, config);
+    expect(metadata.parameters[0].name).toBe("key");
+    expect(metadata.parameters[0].typeAnnotation).toBe("string");
+    expect(metadata.parameters[0].defaultOverride).toBe("FALLBACK");
+    temp.cleanupSync();
+  });
+
+  test("parses param with no type annotation (plain name)", () => {
+    const file = writeTempYaml("# @section S\n# @param plain.name Simple desc\nplain:\n  name: v\n");
+    const metadata = parseMetadataComments(file, config);
+    expect(metadata.parameters[0].name).toBe("plain.name");
+    expect(metadata.parameters[0].typeAnnotation).toBe("");
+    expect(metadata.parameters[0].nullable).toBe(false);
+    expect(metadata.parameters[0].defaultOverride).toBeUndefined();
+    expect(metadata.parameters[0].description).toBe("Simple desc");
     temp.cleanupSync();
   });
 

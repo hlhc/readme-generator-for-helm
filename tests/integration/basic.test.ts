@@ -168,10 +168,6 @@ test("Check anchor-based README replacement with config file", () => {
           extra: "@extra",
         },
         modifiers: {
-          array: "array",
-          object: "object",
-          string: "string",
-          nullable: "nullable",
           default: "default",
         },
       },

@@ -23,8 +23,10 @@ export function parseMetadataComments(valuesFilePath: string, config: Config): M
   const lines = data.split(/\r?\n/);
 
   const parsedValues = new Metadata();
+  // JSDoc-style: @param {type?} name [default=value] Description
+  // Groups: 1=type, 2=nullable(?), 3=name, 4=default, 5=description
   const paramRegex = new RegExp(
-    `^\\s*${config.comments.format}\\s*${config.tags.param}\\s*([^\\s]+)\\s*(\\[.*?\\])?\\s*(.*)$`,
+    `^\\s*${config.comments.format}\\s*${config.tags.param}\\s*(?:\\{(\\w*(?:\\[\\])?)(\\??)\\}\\s*)?(\\S+)\\s*(?:\\[${config.modifiers.default}=([^\\]]*)\\]\\s*)?(.*)$`,
   );
   const sectionRegex = new RegExp(
     `^\\s*${config.comments.format}\\s*${config.tags.section}\\s*(.*)$`,
@@ -42,8 +44,10 @@ export function parseMetadataComments(valuesFilePath: string, config: Config): M
   const skipRegex = new RegExp(
     `^\\s*${config.comments.format}\\s*${config.tags.skip}\\s*([^\\s]+)\\s*(.*)$`,
   );
+  // JSDoc-style: @extra {type?} name Description
+  // Groups: 1=type, 2=nullable(?), 3=name, 4=description
   const extraRegex = new RegExp(
-    `^\\s*${config.comments.format}\\s*${config.tags.extra}\\s*([^\\s]+)\\s*(\\[.*?\\])?\\s*(.*)$`,
+    `^\\s*${config.comments.format}\\s*${config.tags.extra}\\s*(?:\\{(\\w*(?:\\[\\])?)(\\??)\\}\\s*)?(\\S+)\\s*(.*)$`,
   );
 
   // We assume there will always be a section before any parameter. At least one section is required
@@ -53,13 +57,28 @@ export function parseMetadataComments(valuesFilePath: string, config: Config): M
     // Parse param line
     const paramMatch = line.match(paramRegex);
     if (paramMatch && paramMatch.length > 0) {
-      const param = new Parameter(paramMatch[1]);
-      const modifiers = paramMatch[2] ? paramMatch[2].split("[")[1].split("]")[0] : "";
-      param.modifiers = modifiers
-        .split(",")
-        .filter((m) => m)
-        .map((m) => m.trim());
-      param.description = paramMatch[3];
+      const typeAnnotation = paramMatch[1]; // 'string', 'string[]', 'object', or ''
+      const nullableMarker = paramMatch[2]; // '?' or ''
+      const paramName = paramMatch[3]; // name (always plain)
+      const defaultValue = paramMatch[4]; // default from [default=value]
+      const description = paramMatch[5]; // description text
+
+      const param = new Parameter(paramName);
+
+      // Set type annotation from JSDoc {type}
+      if (typeAnnotation && typeAnnotation !== "") {
+        param.typeAnnotation = typeAnnotation;
+      }
+      // Set nullable from {?} or {?type}
+      if (nullableMarker === "?") {
+        param.nullable = true;
+      }
+      // Set default override from [name=value]
+      if (defaultValue !== undefined) {
+        param.defaultOverride = defaultValue;
+      }
+
+      param.description = description;
       if (currentSection) {
         param.section = currentSection.name;
         currentSection.addParameter(param);
@@ -124,8 +143,8 @@ export function parseMetadataComments(valuesFilePath: string, config: Config): M
     // Parse extra line
     const extraMatch = line.match(extraRegex);
     if (extraMatch && extraMatch.length > 0) {
-      const param = new Parameter(extraMatch[1]);
-      param.description = extraMatch[3];
+      const param = new Parameter(extraMatch[3]);
+      param.description = extraMatch[4];
       param.value = ""; // Set an empty string by default since it won't have a value in the actual YAML
       param.extra = true;
       if (currentSection) {

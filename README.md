@@ -61,7 +61,7 @@ If both are configured, the tool fails with an error.
 
 ## Requirements
 
-The project has been developed and tested with node version `22.x`.
+The project has been developed and tested with [Bun](https://bun.sh/) version `1.x`.
 
 ## Install
 
@@ -69,12 +69,9 @@ Execute the following commands to install the tool:
 
 ```console
 git clone https://github.com/bitnami/readme-generator-for-helm
-npm install ./readme-generator-for-helm
+cd ./readme-generator-for-helm
+bun install
 ```
-
-Depending on how you installed NodeJS in your system, you may need to modify your `PATH` environment variable to be able to execute the tool.
-
-> NOTE: Starting with version `2.8.0`, we are no longer publishing this package to npmjs.org.
 
 ## Single Binary
 
@@ -83,17 +80,16 @@ Execute the following commands to create a single executable binary for the tool
 ```console
 git clone https://github.com/bitnami/readme-generator-for-helm
 cd ./readme-generator-for-helm
-npm install
-npm install -g @yao-pkg/pkg
-pkg . -o readme-generator-for-helm
+bun install
+bun build ./bin/index.ts --compile --outfile readme-generator-for-helm
 ```
 
 ## Test
 
-We use [Jest](https://jestjs.io) to implement the tests. In order to test your changes, execute the following command:
+We use [Vitest](https://vitest.dev) to implement the tests. In order to test your changes, execute the following command:
 
 ```console
-npm run-script test
+bun run test
 ```
 
 ### Lint
@@ -101,7 +97,7 @@ npm run-script test
 After modifying the code execute the following command to pass the linter:
 
 ```console
-npm run-script lint
+bun run lint
 ```
 
 ## Basic usage
@@ -126,7 +122,8 @@ By default we use a format similar to Javadoc, using `@xxx` for tags followed by
 
 The following are the tags supported at this very moment:
 
-- For a parameter: `## @param fullKeyPath [modifier?] Description`.
+- For a parameter: `## @param {type?} fullKeyPath Description`.
+- For a parameter with a default value override: `## @param {type?} fullKeyPath [default=DEFAULT] Description`.
 - For a section: `## @section Section Title"`.
 - For a subsection: `## @subsection Subsection Title`.
 - To skip an object and all its children: `## @skip fullKeyPath Description?`.
@@ -137,45 +134,29 @@ All the tags as well as the two initial `#` characters for the comments style ca
 > [!IMPORTANT]
 > tags' order or position in the file is NOT important except for the @section and @subsection tags. A @section includes all parameters after it until a new @section or @subsection is found. A @subsection includes all parameters after it until a new @section or @subsection is found.
 
-The `modifier` is optional and it will change how the parameter is processed.
-Several modifiers can be applied by separating them using commas (`,`). When affecting the value, the last one takes precedence.
+Type annotations use curly braces and are optional. They control how the parameter is processed. Nullable is indicated with a trailing `?`, TypeScript-style.
 
-Currently supported modifiers:
+Supported type annotations:
 
-- `[array]` Indicates that the value of the parameter must be set to `[]`.
-- `[object]` Indicates that the value of the parameter must be set to `{}`.
-- `[string]` Indicates that the value of the parameter must be set to `""`.
-- `[nullable]` Indicates that the parameter value can be set to `null`.
-- `[default: DEFAULT_VALUE]` Sets the default value to `DEFAULT_VALUE`.
+- `{object}` Sets the value to `{}`.
+- `{string}` Sets the value to `""`.
+- `{string[]}` Sets the value to `[]` (array of strings). Any element type is supported (e.g. `{number[]}`, `{object[]}`).
+- `{type?}` Marks the parameter as nullable, e.g. `{string?}`, `{string[]?}`, `{?}` (nullable only).
 
-The modifiers are also customizable via the [configuration file](#configuration-file).
+Default value overrides use the `[default=VALUE]` modifier after the parameter name:
 
-In case you are adding a `custom modifier` to a parameter that does not have value in the values file
-you must add one of the `supported modifiers` as last modifier.
+- `fullKeyPath [default=DEFAULT_VALUE]` Sets the displayed default value to `DEFAULT_VALUE`.
 
-Example:
+The `default` keyword is customizable via the `modifiers.default` option in the [configuration file](#configuration-file).
 
-Values file
+Examples:
 
 ```yaml
-# @param noDefaultValue [number, nullable] Description
-# noDefaultValue: 1
-```
-
-Custom configuration snippet:
-
-```json
-{
-  ...
-    "modifiers": {
-    "array": "array",
-    "object": "object",
-    "string": "string",
-    "nullable": "nullable",
-    "number": "number"
-  },
-  ...
-}
+## @param {string} configuration haproxy configuration
+## @param {?} nullable Nullable parameter
+## @param {string[]?} nullableArray Nullable array parameter
+## @param image.registry [default=REGISTRY_NAME] Kubewatch image registry
+## @param {string} image.tag [default=latest] Image tag with type and default override
 ```
 
 ## Configuration file
@@ -204,10 +185,7 @@ The configuration file has the following structure:
     "extra": "@extra"                            <-- Tag to add a description for an intermediate object
   },
   "modifiers": {
-    "array": "array",                            <-- Modifier that indicates an array type
-    "object": "object",                          <-- Modifier that indicates an object type
-    "string": "string",                          <-- Modifier that indicates a string type
-    "nullable": "nullable"                       <-- Modifier that indicates a parameter that can be set to null
+    "default": "default"                           <-- Modifier keyword for default value overrides
   }
 }
 ```
@@ -230,30 +208,73 @@ Add this to your `.pre-commit-config.yaml`:
 
 ## Versions
 
-### 2.8.1
+### 5.0.0
 
-Fix wrong resolved URLs in `package-lock.json` and upgrade base image in `Dockerfile`.
+**Breaking Changes** — This release overhauls the typing and modifier system. If you are upgrading from 4.x, you must update your `values.yaml` annotations and configuration file.
 
-### 2.8.0
+#### Typing System
 
-Upgrade Node.js version to branch 24.x and dependencies.
+Type annotations now use **TypeScript-style** syntax inside curly braces. The old bracket-style modifiers (`[array]`, `[object]`, `[string]`, `[nullable]`) and the JSDoc-style leading nullable (`{?type}`) are no longer supported.
 
-Descriptions now discard only a single whitespace. This way, code blocks can use proper indentation.
+**New syntax:** `@param {type?} name Description`
 
-### 2.4.0
+| Annotation | Type set | Default value | Description |
+|:-----------|:---------|:--------------|:------------|
+| `{string}` | `string` | `""` | Force the type to string |
+| `{object}` | `object` | `{}` | Force the type to object |
+| `{string[]}` | `array` | `[]` | Array of strings |
+| `{number[]}` | `array` | `[]` | Array of numbers |
+| `{object[]}` | `array` | `[]` | Array of objects |
+| `{?}` | _(unchanged)_ | `nil` | Nullable (no type override) |
+| `{string?}` | `string` | `nil` | Nullable string |
+| `{string[]?}` | `array` | `nil` | Nullable array of strings |
 
-Add `descriptionStart` and `descriptionEnd` config options (default tags: `@descriptionStart` and `@descriptionEnd`)
-to allow text block upfront each section table in README.md. When changing the tag values for these, ensure to not being conflicted
-with `section` config option.
+Any element type is supported with `[]` — the tool maps it to the OpenAPI `array` type.
 
-If you are using a customized [configuration file](#configuration-file), please add the new default tags to prevent any incorrect behavior.
+Nullable is indicated with a **trailing `?`** (TypeScript-style), not a leading one.
 
-### 2.0.0
+**Default value override** uses the `[default=VALUE]` modifier after the parameter name:
 
-The `-m (--metadata)` option has been renamed to `-s (--schema)` in order to properly identify what it generates.
+```yaml
+## @param image.registry [default=REGISTRY_NAME] Image registry with custom default
+## @param {string} image.tag [default=latest] Image tag with type and custom default
+```
+
+#### Migration from 4.x
+
+**1. Update type annotations in `values.yaml`:**
+
+| 4.x syntax | 5.x syntax |
+|:-----------|:-----------|
+| `[array]` or `{array}` | `{string[]}` (or `{number[]}`, `{object[]}`, etc.) |
+| `[object]` or `{object}` | `{object}` |
+| `[string]` or `{string}` | `{string}` |
+| `[nullable]` or `{?}` | `{?}` |
+| `[string,nullable]` | `{string?}` |
+| `[array,nullable]` | `{string[]?}` |
+
+**2. Update default value override syntax in `values.yaml`:**
+
+The default value override now uses the `[default=VALUE]` modifier after the parameter name instead of wrapping the name in brackets:
+
+| 4.x syntax | 5.x syntax |
+|:-----------|:-----------|
+| `[image.registry=REGISTRY_NAME]` | `image.registry [default=REGISTRY_NAME]` |
+| `{string} [image.tag=latest]` | `{string} image.tag [default=latest]` |
+
+**3. Update your configuration file:**
+
+The `modifiers` section now only contains the `default` keyword. If you have a custom config, ensure it includes the `modifiers` block:
+
+```json
+"modifiers": {
+  "default": "default"
+}
+```
 
 ## License
 
+Copyright &copy; 2026 Cyrus Ho.
 Copyright &copy; 2025 Broadcom. The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
 
 Licensed under the Apache License, Version 2.0 (the "License");

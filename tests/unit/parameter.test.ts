@@ -13,12 +13,13 @@ describe("Parameter", () => {
     expect(p.description).toBe("");
     expect(p.value).toBeUndefined();
     expect(p.type).toBe("");
-    expect(p.modifiers).toEqual([]);
+    expect(p.typeAnnotation).toBe("");
+    expect(p.nullable).toBe(false);
+    expect(p.defaultOverride).toBeUndefined();
     expect(p.section).toBe("");
     expect(p.validate).toBe(true);
     expect(p.readme).toBe(true);
     expect(p.schema).toBe(true);
-    expect(p.nullable).toBeUndefined();
   });
 
   describe("extra getter/setter", () => {
