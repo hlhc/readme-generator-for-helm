@@ -672,20 +672,20 @@
         },
         "nullableNullStringWithValueChange": {
             "type": "string",
-            "description": "Nullable null string. We apply string modifier that will change the type and value, but the schema will show `nullable: true`.",
-            "default": "\"\"",
+            "description": "Nullable null string. The schema will show `nullable: true`.",
+            "default": null,
             "nullable": true
         },
         "nullableNullArray": {
             "type": "array",
-            "description": "Nullable null array. We apply array modifier that will change the type in the schema plus `nullable: true`.",
+            "description": "Nullable null array. The schema will show the array type plus `nullable: true`.",
             "default": null,
             "nullable": true,
             "items": {}
         },
         "nullableNullString": {
             "type": "string",
-            "description": "Nullable null string. We apply string modifier to avoid infering an object type. The null must be preverved as value.",
+            "description": "Nullable null string. The string type avoids inferring an object type. The null must be preserved as value.",
             "default": null,
             "nullable": true
         },

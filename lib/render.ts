@@ -10,6 +10,7 @@ import { markdownTable as table } from "markdown-table";
 import * as utils from "./utils.ts";
 import type Parameter from "./parameter.ts";
 import type { Config } from "./types.ts";
+import { isArrayType } from "./typing.ts";
 
 type SchemaProperties = Record<string, SchemaEntry>;
 
@@ -404,7 +405,7 @@ export function renderOpenAPISchema(
   let paramsList = utils.cloneParameters(parametersList);
   // Find nil values in the between the parameters.
   const nilValues = paramsList
-    .filter((p) => p.value === "nil" && !utils.containsModifier(p, config.modifiers.nullable))
+    .filter((p) => p.value === "nil" && !p.nullable)
     .map((p) => p.name);
   if (nilValues.length > 0) {
     throw new Error(`Invalid type 'nil' for the following values: ${nilValues.join(", ")}`);
@@ -412,50 +413,28 @@ export function renderOpenAPISchema(
 
   // For nullable parameters with nil value, we need to convert to OpenAPI 'null'.
   paramsList.forEach((p) => {
-    if (p.value === "nil" && utils.containsModifier(p, config.modifiers.nullable)) {
+    if (p.value === "nil" && p.nullable) {
       console.log("Adding null parameter to the schema");
       p.value = "null";
     }
   });
-  // For nullable parameters we need to set the nullable property in the schema
-  paramsList.forEach((p) => {
-    if (utils.containsModifier(p, config.modifiers.nullable)) {
-      p.nullable = true;
-    }
-  });
 
-  // Apply modifiers to the type
+  // Apply type annotations to the schema type
   paramsList.forEach((p) => {
-    if (p.modifiers.length > 0) {
-      p.modifiers.forEach((m) => {
-        switch (m) {
-          case `${config.modifiers.array}`:
-            p.type = "array";
-            break;
-          case `${config.modifiers.object}`:
-            p.type = "object";
-            break;
-          case `${config.modifiers.string}`:
-            p.type = "string";
-            break;
-          default:
-            break;
-        }
-      });
+    if (p.typeAnnotation) {
+      if (isArrayType(p.typeAnnotation)) {
+        p.type = "array";
+      } else {
+        p.type = p.typeAnnotation;
+      }
     }
   });
 
   // Filter extra parameters since they are not actually in the YAML object
   paramsList = paramsList.filter((p) => !p.extra);
-  // The parameters with the "object" modifier must not end in the schema, the actual object should
-  // For example:
-  // @param a.b [object] Whatever
-  // a:
-  //   b: "something"
-  // "a.b" must be in the schema, while "a" is not an actual entry (Rendered in the README only)
-  paramsList = paramsList.filter((p) => !utils.containsModifier(p, config.modifiers.object));
+  // The parameters with the "object" type annotation must not end in the schema, the actual object should
+  paramsList = paramsList.filter((p) => p.typeAnnotation !== "object");
   // Filter the parameters without a value.
-  // When there is a modifier a fake parameter is added into the list due to the metadata
   paramsList = paramsList.filter((p) => p.value !== undefined);
   // Render only parameter with schema=true
   paramsList = paramsList.filter((p) => p.schema);

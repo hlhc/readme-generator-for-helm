@@ -65,8 +65,8 @@ hostAliases: []
 ## Bitnami Kubewatch image version
 ## ref: https://hub.docker.com/r/bitnami/kubewatch/tags/
 ##
-## @param image.registry [default: REGISTRY_NAME] Kubewatch image registry
-## @param image.repository [default: REPOSITORY_NAME/kubewatch] Kubewatch image name
+## @param image.registry [default=REGISTRY_NAME] Kubewatch image registry
+## @param image.repository [default=REPOSITORY_NAME/kubewatch] Kubewatch image name
 ## @skip image.tag Kubewatch image tag
 ## @param image.pullPolicy Kubewatch image pull policy
 ## @param image.pullSecrets Specify docker-registry secret names as an array
@@ -136,7 +136,7 @@ msteams:
   enabled: false
   webhookurl: ""
 
-## @param webhook [object] Enable Webhook notifications
+## @param {object} webhook Enable Webhook notifications
 ##
 webhook:
   enabled: false
@@ -460,12 +460,12 @@ inventedArray:
   - b
 
 ## Invented parameter to test array modifier
-## @param arrayModifier [array] Test parameter for modifier array
+## @param {string[]} arrayModifier Test parameter for modifier array
 arrayModifier:
   - a
   - b
 
-## @param configuration [string] haproxy configuration
+## @param {string} configuration haproxy configuration
 ##
 configuration: |
   global
@@ -505,7 +505,7 @@ jobs:
 extraTest:
   content: whatever
 
-## @param forceSchemaArrayModifier [array] The parameter should appear completely into the schema but with the modifier value into the README
+## @param {string[]} forceSchemaArrayModifier The parameter should appear completely into the schema but with the modifier value into the README
 ##
 forceSchemaArrayModifier:
   - w: "x"
@@ -513,28 +513,28 @@ forceSchemaArrayModifier:
       - "z"
 
 ## Invented parameter to test links in descriptions
-## @param linkInDescription [object] Link with square brackets present in description. [More information here](#deployment-parameters).
+## @param {object} linkInDescription Link with square brackets present in description. [More information here](#deployment-parameters).
 linkInDescription:
   propertyOne: valueOne
   propertyTwo: valueTwo
 
 ## Nullable value
-## @param nullable [nullable] Nullable parameter
+## @param {?} nullable Nullable parameter
 nullable: null
-## @param nullableNullStringWithValueChange [nullable,string] Nullable null string. We apply string modifier that will change the type and value, but the schema will show `nullable: true`.
+## @param {string?} nullableNullStringWithValueChange Nullable null string. The schema will show `nullable: true`.
 nullableNullStringWithValueChange: null
-## @param nullableNullArray [array,nullable] Nullable null array. We apply array modifier that will change the type in the schema plus `nullable: true`.
+## @param {string[]?} nullableNullArray Nullable null array. The schema will show the array type plus `nullable: true`.
 nullableNullArray: null
-## @param nullableNullString [string,nullable] Nullable null string. We apply string modifier to avoid infering an object type. The null must be preverved as value.
+## @param {string?} nullableNullString Nullable null string. The string type avoids inferring an object type. The null must be preserved as value.
 nullableNullString: null
-## @param nullableNotNull [nullable] Nullable parameter with a non null value
+## @param {?} nullableNotNull Nullable parameter with a non null value
 nullableNotNull: somestring
-## @param nullableObject [nullable] Nullable parameter with an object value
+## @param {?} nullableObject Nullable parameter with an object value
 nullableObject: {}
-## @param nullableArray [nullable] Nullable parameter with an array value
+## @param {?} nullableArray Nullable parameter with an array value
 nullableArray: []
 
-## @param arrayEmptyModifier [array] Test empty array modifier
+## @param {string[]} arrayEmptyModifier Test empty array modifier
 arrayEmptyModifier: value
 
 ## @param annotations.prometheus.io/scrape A Prometheus annotation
@@ -559,7 +559,7 @@ vault:
   annotations:
     vault.hashicorp.com/agent-inject: "true"
 ## Issue: ## Issue: https://github.com/bitnami/readme-generator-for-helm/issues/73
-## @param stack.mode [string, nullable] way to deploy
+## @param {string?} stack.mode way to deploy
 ## @param stack.version version of the stack
 stack:
   version: 8.10.3

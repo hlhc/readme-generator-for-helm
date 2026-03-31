@@ -7,7 +7,6 @@ import { describe, test, expect } from "vitest";
 import {
   getArrayPrefix,
   sanitizeProperty,
-  containsModifier,
   cloneParameters,
   getValueByPath,
   flattenObject,
@@ -48,37 +47,11 @@ describe("sanitizeProperty", () => {
   });
 });
 
-describe("containsModifier", () => {
-  test("returns true when modifier is in list", () => {
-    const p = new Parameter("test");
-    p.modifiers = ["array", "nullable"];
-    expect(containsModifier(p, "array")).toBe(true);
-  });
-
-  test("returns true for second modifier in list", () => {
-    const p = new Parameter("test");
-    p.modifiers = ["array", "nullable"];
-    expect(containsModifier(p, "nullable")).toBe(true);
-  });
-
-  test("returns false when modifier is absent", () => {
-    const p = new Parameter("test");
-    p.modifiers = ["array"];
-    expect(containsModifier(p, "string")).toBe(false);
-  });
-
-  test("returns false for empty modifier list", () => {
-    const p = new Parameter("test");
-    p.modifiers = [];
-    expect(containsModifier(p, "array")).toBe(false);
-  });
-});
-
 describe("cloneParameters", () => {
   test("returns a new array with cloned parameters", () => {
     const p = new Parameter("key");
     p.value = "original";
-    p.modifiers = ["array"];
+    p.typeAnnotation = "string[]";
     const clones = cloneParameters([p]);
     expect(clones).toHaveLength(1);
     expect(clones[0]).not.toBe(p);

@@ -18,14 +18,16 @@ function filterValues(
 ): [Parameter[], Parameter[]] {
   const fullMetadataValues = utils.cloneParameters(valuesMetadata);
   // Get the values for which we will skip the check
-  const valuesToSkip = fullMetadataValues.filter((v) => v.skip || v.modifiers.length > 0);
+  const valuesToSkip = fullMetadataValues.filter(
+    (v) => v.skip || v.typeAnnotation !== "" || v.nullable || v.defaultOverride !== undefined,
+  );
   const valuesPathToSkip = valuesToSkip.map((v) => {
     let name: string | undefined;
     if (v.skip) {
       name = v.name;
     }
-    if (v.modifiers.length > 0) {
-      // Skip validation when there are modifiers to avoid check sub-object
+    if (v.typeAnnotation !== "" || v.nullable || v.defaultOverride !== undefined) {
+      // Skip validation when there are annotations to avoid check sub-object
       name = utils.sanitizeProperty(v.name);
     }
     return name;

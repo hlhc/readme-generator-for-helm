@@ -7,52 +7,20 @@
 import type Parameter from "./parameter.ts";
 import type { Config } from "./types.ts";
 import { cloneParameters } from "./utils.ts";
+import { applyTypeAnnotation } from "./typing.ts";
+import { applyDefaultOverride } from "./modifier.ts";
 
 /*
- * Sets the proper value for the provided parameter taking into account its modifiers.
- * IMPORTANT: the last modifier takes precedence when it changes the default value
+ * Applies type annotation, nullable handling, and default override to a parameter.
  */
-function applyModifiers(param: Parameter, config: Config): void {
-  // Hack for nullable parameters.
-  // If there are several modifiers and nullable is the last one,
-  // we just want to change the type and not the value.
-  // This case is used to change the type on the schema only, maintaining the original value
-  const index = param.modifiers.findIndex((m) => m === config.modifiers.nullable) + 1;
-  const isNullableLastModifier = index === param.modifiers.length;
-  param.modifiers.forEach((modifier) => {
-    switch (modifier) {
-      case `${config.modifiers.array}`:
-        param.type = modifier;
-        if (!isNullableLastModifier) {
-          param.value = "[]";
-        }
-        break;
-      case `${config.modifiers.object}`:
-        param.type = modifier;
-        if (!isNullableLastModifier) {
-          param.value = "{}";
-        }
-        break;
-      case `${config.modifiers.string}`:
-        param.type = modifier;
-        if (!isNullableLastModifier) {
-          param.value = '""';
-        }
-        break;
-      case `${config.modifiers.nullable}`:
-        if (param.value === undefined) {
-          param.value = "nil";
-        }
-        break;
-      case modifier.match(new RegExp(`${config.modifiers.default}:.*`))?.input: {
-        const defaultSpacesRegex = `${config.modifiers.default}:\\s*`;
-        param.value = modifier.replace(new RegExp(defaultSpacesRegex), "");
-        break;
-      }
-      default:
-        throw new Error(`Unknown modifier: ${modifier} for parameter ${param.name}`);
-    }
-  });
+function applyAnnotations(param: Parameter): void {
+  applyTypeAnnotation(param);
+
+  if (param.nullable && param.value === undefined) {
+    param.value = "nil";
+  }
+
+  applyDefaultOverride(param);
 }
 
 /*
@@ -106,10 +74,8 @@ export function combineMetadataAndValues(
 export function buildParamsToRenderList(parametersList: Parameter[], config: Config): Parameter[] {
   let returnList = cloneParameters(parametersList);
   for (const param of returnList) {
-    // Modify values following modifiers, except for nullable parameters
-    // that must preserve its value
-    if (param.modifiers) {
-      applyModifiers(param, config);
+    if (param.typeAnnotation || param.nullable || param.defaultOverride !== undefined) {
+      applyAnnotations(param);
     }
     // The skip parameters must not be rendered in the README
     returnList = returnList.filter((p) => !p.skip);

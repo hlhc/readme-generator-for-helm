@@ -18,10 +18,6 @@
     "extra": "@extra"
   },
   "modifiers": {
-    "array": "array",
-    "object": "object",
-    "string": "string",
-    "nullable": "nullable",
     "default": "default"
   }
 }

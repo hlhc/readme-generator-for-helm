@@ -20,10 +20,6 @@ const config: Config = {
     extra: "@extra",
   },
   modifiers: {
-    array: "array",
-    object: "object",
-    string: "string",
-    nullable: "nullable",
     default: "default",
   },
 };
@@ -95,57 +91,50 @@ describe("buildParamsToRenderList", () => {
     expect(result[0].name).toBe("visible");
   });
 
-  test("applies array modifier: sets type and value to []", () => {
+  test("applies array type annotation: sets type and value to []", () => {
     const p = makeParam("arr", undefined, "");
-    p.modifiers = ["array"];
+    p.typeAnnotation = "string[]";
     const result = buildParamsToRenderList([p], config);
     expect(result[0].type).toBe("array");
     expect(result[0].value).toBe("[]");
   });
 
-  test("applies object modifier: sets type and value to {}", () => {
+  test("applies object type annotation: sets type and value to {}", () => {
     const p = makeParam("obj", undefined, "");
-    p.modifiers = ["object"];
+    p.typeAnnotation = "object";
     const result = buildParamsToRenderList([p], config);
     expect(result[0].type).toBe("object");
     expect(result[0].value).toBe("{}");
   });
 
-  test("applies string modifier: sets type and value to empty string", () => {
+  test("applies string type annotation: sets type and value to empty string", () => {
     const p = makeParam("str", undefined, "");
-    p.modifiers = ["string"];
+    p.typeAnnotation = "string";
     const result = buildParamsToRenderList([p], config);
     expect(result[0].type).toBe("string");
     expect(result[0].value).toBe('""');
   });
 
-  test("applies nullable modifier: sets value to nil when undefined", () => {
+  test("applies nullable: sets value to nil when undefined", () => {
     const p = makeParam("nul", undefined, "");
-    p.modifiers = ["nullable"];
+    p.nullable = true;
     const result = buildParamsToRenderList([p], config);
     expect(result[0].value).toBe("nil");
   });
 
-  test("applies default modifier: sets value to the provided default", () => {
+  test("applies default override: sets value to the provided default", () => {
     const p = makeParam("def", undefined, "");
-    p.modifiers = ["default: myDefault"];
+    p.defaultOverride = "myDefault";
     const result = buildParamsToRenderList([p], config);
     expect(result[0].value).toBe("myDefault");
   });
 
-  test("throws on unknown modifier", () => {
-    const p = makeParam("bad", undefined, "");
-    p.modifiers = ["unknownModifier"];
-    expect(() => buildParamsToRenderList([p], config)).toThrow(
-      "Unknown modifier: unknownModifier for parameter bad",
-    );
-  });
-
-  test("nullable as last modifier preserves type from array but does not overwrite value", () => {
+  test("nullable with array type annotation preserves type but sets value to nil", () => {
     const p = makeParam("combo", undefined, "");
-    p.modifiers = ["array", "nullable"];
+    p.typeAnnotation = "string[]";
+    p.nullable = true;
     const result = buildParamsToRenderList([p], config);
-    // array sets type but NOT value (because nullable is last)
+    // array sets type but NOT value (because nullable)
     expect(result[0].type).toBe("array");
     // nullable sets value to nil since it was still undefined
     expect(result[0].value).toBe("nil");

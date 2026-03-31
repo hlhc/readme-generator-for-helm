@@ -38,13 +38,13 @@ describe("checkKeys", () => {
     expect(() => checkKeys(valuesObject, valuesMetadata)).toThrow("ERROR: Wrong metadata!");
   });
 
-  test("skips check for parameters with modifiers and their children", () => {
-    // "obj" has modifier [object] → sanitizeProperty("obj") returns "obj" (plain branch, utils line 37)
+  test("skips check for parameters with type annotations and their children", () => {
+    // "obj" has type annotation {object} → sanitizeProperty("obj") returns "obj" (plain branch, utils line 37)
     // "obj.x" and "obj.y" are children → skipped
     const valuesObject = [param("a"), param("obj.x"), param("obj.y")];
     const paramA = param("a");
     const paramObj = param("obj");
-    paramObj.modifiers = ["object"];
+    paramObj.typeAnnotation = "object";
     const valuesMetadata = [paramA, paramObj];
     expect(() => checkKeys(valuesObject, valuesMetadata)).not.toThrow();
   });

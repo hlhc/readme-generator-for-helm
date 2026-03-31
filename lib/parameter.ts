@@ -4,6 +4,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import type { TypeAnnotation } from "./typing.ts";
+
 export type ParameterValue =
   | string
   | number
@@ -18,19 +20,21 @@ export default class Parameter {
   description: string;
   value: ParameterValue;
   type: string;
-  modifiers: string[];
+  typeAnnotation: TypeAnnotation;
+  nullable: boolean;
+  defaultOverride?: string;
   section: string;
   validate: boolean;
   readme: boolean;
   schema: boolean;
-  nullable?: boolean;
 
   constructor(name: string) {
     this.name = name;
     this.description = "";
     this.value = undefined;
     this.type = "";
-    this.modifiers = [];
+    this.typeAnnotation = "";
+    this.nullable = false;
     this.section = "";
     this.validate = true;
     this.readme = true;
