@@ -93,7 +93,7 @@ jobs:
           bun build ./bin/index.ts --compile --target=bun-darwin-arm64 --outfile dist/binaries/readme-generator-darwin-arm64
           bun build ./bin/index.ts --compile --target=bun-windows-x64 --outfile dist/binaries/readme-generator-windows-x64.exe
       - name: Create GitHub release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ github.ref_name }}
           name: ${{ github.ref_name }}
